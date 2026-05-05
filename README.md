@@ -47,6 +47,19 @@ Ouvre [http://localhost:3000](http://localhost:3000).
 
 Les fichiers **`.env` et `.env.local` ne sont pas versionnés** — utilise `.env.example` comme modèle.
 
+## Déployer le backend sur Render (Web Service)
+
+Dans un dépôt mono‑repo (`frontend/` + `backend/`), le point le plus fréquent qui fait **échouer le démarrage** (après un build OK) est un mauvais **répertoire racine** : Uvicorn doit voir le package `app` dans le dossier courant.
+
+Sur le service Render :
+
+1. **Root Directory** : `backend` *(obligatoire si le repo contient aussi `frontend/`)*  
+2. **Build Command** : `pip install -r requirements.txt`  
+3. **Start Command** : `uvicorn app.main:app --host 0.0.0.0 --port $PORT`  
+4. **Environment** : définir au minimum `OPENAI_API_KEY` et `OPENAI_MODEL` (voir `backend/.env.example`). Pour les liens « mot de passe oublié », `PUBLIC_APP_URL` = URL de ton frontend (ex. Vercel).
+
+Les logs doivent afficher `>>> BACKEND IS STARTING...` puis une ligne `SQLite path: ...`. Si le processus s’arrête sans traceback, vérifie encore **Root Directory** = `backend`.
+
 ## Première fois avec GitHub ?
 
 Voir **`docs/github-debutant.md`** dans ce dépôt : création du compte, dépôt distant, premiers commits et push.

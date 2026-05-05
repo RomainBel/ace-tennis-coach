@@ -1,7 +1,9 @@
 import json
+import logging
 import os
 import re
 import secrets
+import sys
 import time
 import traceback
 from datetime import date, datetime, timedelta, timezone
@@ -9,6 +11,10 @@ from pathlib import Path
 from typing import Any, List, Literal, Optional
 
 from dotenv import load_dotenv
+
+# Charger les variables d’environnement avant tout import applicatif (Render, .env local).
+load_dotenv()
+
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -18,12 +24,25 @@ from pydantic import BaseModel, Field
 from app import store
 from app import tennis_logic
 
-app = FastAPI(title="Coach Tennis IA API")
-load_dotenv()
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+log = logging.getLogger("ace.api")
+print(">>> BACKEND IS STARTING...", flush=True)
+log.info("Python %s | cwd=%s", sys.version.split()[0], os.getcwd())
 
+app = FastAPI(title="Coach Tennis IA API")
+
+# CORS — local dev + frontend Vercel. Pas de "*" avec allow_credentials=True (interdit Starlette / navigateurs).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:3000", "http://localhost:3000"],
+    allow_origins=[
+        "http://127.0.0.1:3000",
+        "http://localhost:3000",
+        "https://ace-tennis-coach.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -657,7 +676,14 @@ TOOLS: list[dict[str, Any]] = [
 
 @app.on_event("startup")
 def startup() -> None:
-    store.init_db()
+    try:
+        db_path = getattr(store, "DB_PATH", "?")
+        log.info("SQLite path: %s", os.path.abspath(db_path))
+        store.init_db()
+        log.info("SQLite init_db OK.")
+    except Exception:
+        log.exception("startup / init_db crashed — voir la traceback ci-dessous")
+        raise
 
 
 def should_summarize(messages: list[dict[str, str]]) -> bool:
