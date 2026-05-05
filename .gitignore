@@ -1,0 +1,39 @@
+# OS & éditeurs
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets (ne jamais versionner les vraies clés)
+backend/.env
+frontend/.env
+frontend/.env.local
+frontend/.env*.local
+
+# Exceptions : modèles vides pour les autres développeurs
+!backend/.env.example
+!frontend/.env.example
+
+# Backend Python
+backend/.venv/
+backend/venv/
+**/__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.db
+*.db-shm
+*.db-wal
+
+# Frontend Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+
+/node_modules/
+
+# Logs
+*.log
+npm-debug.log*

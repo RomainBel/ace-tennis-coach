@@ -1,0 +1,9 @@
+Registre des modules disponibles (tag -> fichier):
+- match_debrief: module_match_debrief.txt
+- planning: module_planning.txt
+- match_preparation: module_match_preparation.txt
+- program_adjustment: module_program_adjustment.txt
+
+Notes:
+- Ce registre sert de point d'entree unique pour activer un module via module_tag.
+- Le detail operationnel de chaque process est defini uniquement dans son fichier module_*.txt.

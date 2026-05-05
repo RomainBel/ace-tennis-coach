@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Évite le décalage latéral quand la barre de défilement apparaît / disparaît (modales, overflow). */
+@layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+}
