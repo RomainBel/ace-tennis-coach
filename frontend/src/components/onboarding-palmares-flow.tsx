@@ -169,6 +169,7 @@ export function OnboardingPalmaresFlow({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          session_id: sessionId,
           current_ranking: tenupCurrentRanking.trim(),
           origin_ranking: tenupOriginRanking.trim(),
           target_ranking: tenupTargetRanking.trim(),
@@ -213,6 +214,7 @@ export function OnboardingPalmaresFlow({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          session_id: sessionId,
           current_ranking: tenupCurrentRanking.trim(),
           origin_ranking: tenupOriginRanking.trim() || tenupCurrentRanking.trim(),
           target_ranking: tenupTargetRanking.trim(),
