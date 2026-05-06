@@ -17,6 +17,7 @@ import {
   X
 } from "lucide-react";
 import { buttonPrimary, buttonSecondary } from "@/lib/button-styles";
+import { ChatMarkdown } from "@/components/chat-markdown";
 import { cn } from "@/lib/cn";
 import { TennisBall } from "@/lib/tennis-ball";
 import { projectedRankingFromPoints, FFT_ECHELONS } from "@/lib/projected-ranking-from-points";
@@ -5352,7 +5353,11 @@ export default function Home() {
                       : "bg-[#252525] text-neutral-100"
                   }`}
                 >
-                  <span className="whitespace-pre-wrap">{m.text}</span>
+                  {m.role === "assistant" ? (
+                    <ChatMarkdown text={m.text} />
+                  ) : (
+                    <span className="whitespace-pre-wrap">{m.text}</span>
+                  )}
                   {matchSheetCtas.length > 0 && (
                     <div className="mt-3 border-t border-white/10 pt-2.5">
                       <div className="flex flex-wrap gap-2">
