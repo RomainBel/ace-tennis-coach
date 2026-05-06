@@ -27,7 +27,13 @@ type ProfileLite = {
 
 type DashboardBootstrap = {
   ranking_echelons: string[];
-  profile: { onboarding_completed?: boolean };
+  profile?: {
+    onboarding_completed?: boolean;
+    display_name?: string;
+    current_ranking?: string;
+    target_ranking?: string;
+    avatar_data_url?: string;
+  };
 };
 
 export default function OnboardingPage() {
@@ -60,9 +66,16 @@ export default function OnboardingPage() {
     if (!res.ok) return;
     const data = (await res.json()) as DashboardBootstrap;
     setEchelons(data.ranking_echelons ?? []);
-    if (data.profile?.onboarding_completed === true) {
+    const p = data.profile;
+    if (p?.onboarding_completed === true) {
       router.replace("/dashboard");
+      return;
     }
+    // Reprendre un onboarding interrompu : aligner l’état local sur ce qui est déjà en base.
+    if (p?.display_name?.trim()) setDisplayName(p.display_name.trim());
+    if (p?.current_ranking?.trim()) setCurrentRanking(p.current_ranking.trim());
+    if (p?.target_ranking?.trim()) setTargetRanking(p.target_ranking.trim());
+    if (p?.avatar_data_url?.trim()) setAvatarDataUrl(p.avatar_data_url.trim());
   }, [sessionId, router]);
 
   useEffect(() => {
@@ -113,7 +126,11 @@ export default function OnboardingPage() {
   async function goStep1to2(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!sessionId || !displayName.trim()) {
+    if (!sessionId) {
+      setError("Session pas encore prête — attends une seconde et réessaie.");
+      return;
+    }
+    if (!displayName.trim()) {
       setError("Indique au moins ton prénom ou ton nom.");
       return;
     }
@@ -150,7 +167,10 @@ export default function OnboardingPage() {
   async function goStep2to3(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!sessionId) return;
+    if (!sessionId) {
+      setError("Session pas encore prête — attends une seconde et réessaie.");
+      return;
+    }
     setLoading(true);
     try {
       const profile = await patchProfile({
@@ -182,7 +202,17 @@ export default function OnboardingPage() {
     setLoading(true);
     setError(null);
     try {
-      await patchProfile({ onboarding_completed: true });
+      // Un seul PUT final : comme le modal Profil, pour ne pas dépendre uniquement des étapes 1–2
+      // (réseau froid, perte de requête, etc.).
+      const body: Record<string, unknown> = {
+        current_ranking: currentRanking,
+        target_ranking: targetRanking,
+        onboarding_completed: true
+      };
+      const name = displayName.trim();
+      if (name) body.display_name = name;
+      if (avatarDataUrl) body.avatar_data_url = avatarDataUrl;
+      await patchProfile(body);
       router.push("/dashboard?onboarding=1");
       router.refresh();
     } catch (err) {

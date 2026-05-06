@@ -20,6 +20,11 @@ import { buttonPrimary, buttonSecondary } from "@/lib/button-styles";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import { cn } from "@/lib/cn";
 import { TennisBall } from "@/lib/tennis-ball";
+import {
+  mergeTenupParsedRows,
+  sanitizeTenupMatchesForCommit,
+  type TenupParsedRow
+} from "@/lib/tenup-import-commit";
 import { projectedRankingFromPoints, FFT_ECHELONS } from "@/lib/projected-ranking-from-points";
 import { signOut, useSession } from "next-auth/react";
 import {
@@ -257,23 +262,6 @@ type CatalogPlayer = {
   play_style: string;
   public_notes: string;
 };
-
-type TenupParsedRow = Record<string, string | number | boolean | null | undefined>;
-
-function mergeTenupParsedRows(existing: TenupParsedRow[], incoming: TenupParsedRow[]): TenupParsedRow[] {
-  const key = (r: TenupParsedRow) =>
-    `${String(r.match_date ?? "")}|${String(r.opponent_name ?? "").trim().toLowerCase()}|${r.won ? "v" : "d"}`;
-  const seen = new Set(existing.map(key));
-  const out = [...existing];
-  for (const r of incoming) {
-    const k = key(r);
-    if (!seen.has(k)) {
-      seen.add(k);
-      out.push(r);
-    }
-  }
-  return out;
-}
 
 type Dashboard = {
   session_id: string;
@@ -1905,16 +1893,31 @@ export default function Home() {
           origin_ranking: tenupOriginRanking.trim() || tenupCurrentRanking.trim(),
           target_ranking: tenupTargetRanking.trim(),
           gender: tenupGender,
-          matches: tenupRows
+          matches: sanitizeTenupMatchesForCommit(tenupRows)
         })
       });
-      const data = (await res.json()) as { imported?: number; detail?: string };
+      const data = (await res.json()) as {
+        imported?: number;
+        detail?: string;
+        entries?: PalmaresEntry[];
+      };
       if (!res.ok) throw new Error(data.detail ?? "Erreur import final");
-      await loadPalmares(sessionId);
+      const n = data.imported ?? 0;
+      if (n === 0 && tenupRows.length > 0) {
+        window.alert(
+          "Aucune ligne n’a été enregistrée. Vérifie que chaque match a un classement adversaire reconnu (ex. 30/2)."
+        );
+        return;
+      }
+      if (Array.isArray(data.entries)) {
+        setPalmaresEntries(data.entries);
+      } else {
+        await loadPalmares(sessionId);
+      }
       await loadDashboard(sessionId);
       setShowTenupImport(false);
       resetTenupImportFlow();
-      window.alert(`Import terminé: ${data.imported ?? tenupRows.length} matchs ajoutés.`);
+      window.alert(`Import terminé: ${n || tenupRows.length} matchs ajoutés.`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erreur import final";
       window.alert(msg);

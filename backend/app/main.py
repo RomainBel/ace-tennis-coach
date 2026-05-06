@@ -2087,6 +2087,7 @@ def tenup_import_commit(body: TenupImportCommitBody) -> dict[str, Any]:
     return {
         "ok": True,
         "imported": imported,
+        "entries": store.list_palmares_entries(sid),
         "dashboard": store.dashboard_payload(sid),
     }
 

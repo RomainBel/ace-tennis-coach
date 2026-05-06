@@ -13,6 +13,11 @@ import {
   useState
 } from "react";
 
+import {
+  mergeTenupParsedRows,
+  sanitizeTenupMatchesForCommit,
+  type TenupParsedRow
+} from "@/lib/tenup-import-commit";
 import { FFT_ECHELONS } from "@/lib/projected-ranking-from-points";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -24,23 +29,6 @@ type CatalogPlayer = {
   play_style: string;
   public_notes: string;
 };
-
-type TenupParsedRow = Record<string, string | number | boolean | null | undefined>;
-
-function mergeTenupParsedRows(existing: TenupParsedRow[], incoming: TenupParsedRow[]): TenupParsedRow[] {
-  const key = (r: TenupParsedRow) =>
-    `${String(r.match_date ?? "")}|${String(r.opponent_name ?? "").trim().toLowerCase()}|${r.won ? "v" : "d"}`;
-  const seen = new Set(existing.map(key));
-  const out = [...existing];
-  for (const r of incoming) {
-    const k = key(r);
-    if (!seen.has(k)) {
-      seen.add(k);
-      out.push(r);
-    }
-  }
-  return out;
-}
 
 type View = "hub" | "tenup" | "manual";
 
@@ -219,7 +207,7 @@ export function OnboardingPalmaresFlow({
           origin_ranking: tenupOriginRanking.trim() || tenupCurrentRanking.trim(),
           target_ranking: tenupTargetRanking.trim(),
           gender: tenupGender,
-          matches: tenupRows
+          matches: sanitizeTenupMatchesForCommit(tenupRows)
         })
       });
       const data = (await res.json().catch(() => ({}))) as { imported?: number; detail?: string };
@@ -227,10 +215,18 @@ export function OnboardingPalmaresFlow({
         window.alert(typeof data.detail === "string" ? data.detail : "Import impossible.");
         return;
       }
-      const n = data.imported ?? tenupRows.length;
+      const n = data.imported ?? 0;
+      if (n === 0 && tenupRows.length > 0) {
+        window.alert(
+          "Aucune ligne n’a été enregistrée. Vérifie que chaque match a un classement adversaire (ex. 30/2)."
+        );
+        return;
+      }
       resetTenupOnly();
       setView("hub");
-      setHubNotice(`${n} match${n > 1 ? "s" : ""} importés. Tu pourras compléter ton palmarès depuis le tableau de bord.`);
+      setHubNotice(
+        `${n || tenupRows.length} match${(n || tenupRows.length) > 1 ? "s" : ""} importés. Tu pourras compléter ton palmarès depuis le tableau de bord.`
+      );
       onDataChanged?.();
     } finally {
       setTenupCommitting(false);
